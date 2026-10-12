@@ -1,13 +1,35 @@
-import "dotenv/config";
-import express from "express";
-import { Pool } from "pg";
+import express, { Request, Response, NextFunction } from "express";
+import helmet from "helmet";
+import cors from "cors";
+import cookieParser from "cookie-parser";
+import { config } from "./config";
+import { pool } from "./db";
+import authRouter from "./auth";
+import documentsRouter from "./documents";
+import { requireAuth } from "./middleware";
 
 const app = express();
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+app.disable("x-powered-by");
+app.use(helmet());
+app.use(cors({ origin: config.CLIENT_ORIGIN, credentials: true }));
+app.use(express.json({ limit: "10kb" }));
+app.use(cookieParser());
 
 app.get("/health", async (_req, res) => {
-  const r = await pool.query("SELECT 1 AS ok");
-  res.json({ server: "up", db: r.rows[0].ok === 1 });
+  await pool.query("SELECT 1");
+  res.json({ server: "up", db: true });
 });
 
-app.listen(process.env.PORT, () => console.log("running"));
+app.use("/auth", authRouter);
+app.use("/documents", documentsRouter);
+
+app.get("/me", requireAuth, (req, res) => {
+  res.json(req.auth);
+});
+
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  console.error(err.message);
+  res.status(500).json({ error: "Server error" });
+});
+
+app.listen(config.PORT, () => console.log("running"));
