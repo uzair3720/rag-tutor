@@ -32,4 +32,10 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   res.status(500).json({ error: "Server error" });
 });
 
-app.listen(config.PORT, () => console.log("running"));
+app.listen(config.PORT, (err?: Error) => {
+  if (err) {
+    console.error(err.message);
+    process.exit(1);
+  }
+  console.log("running");
+});

@@ -6,6 +6,7 @@ import { extractText, getDocumentProxy } from "unpdf";
 import { requireAuth } from "./middleware";
 import { withOrg } from "./db";
 import { chunkPages } from "./chunker";
+import { embedTexts } from "./embeddings";
 
 const MAX_PAGES = 200;
 const MAX_CHUNKS = 2000;
@@ -82,16 +83,19 @@ router.post("/", limiter, uploadOne, async (req, res) => {
   const hashes = chunks.map((c) => createHash("sha256").update(c.text).digest("hex"));
   const title = cleanTitle(file.originalname);
 
+  const vectors = await embedTexts(contents);
+  const embeds = vectors.map((v) => "[" + v.join(",") + "]");
+
   const doc = await withOrg(orgId, async (client) => {
     const d = await client.query(
       "INSERT INTO documents(org_id, title) VALUES ($1, $2) RETURNING id, title, created_at",
       [orgId, title]
     );
     await client.query(
-      `INSERT INTO chunks(document_id, org_id, page_number, chunk_index, content, content_hash)
-       SELECT $1::uuid, $2::uuid, t.p, t.i, t.c, t.h
-       FROM unnest($3::int[], $4::int[], $5::text[], $6::text[]) AS t(p, i, c, h)`,
-      [d.rows[0].id, orgId, pageNums, indexes, contents, hashes]
+      `INSERT INTO chunks(document_id, org_id, page_number, chunk_index, content, content_hash, embedding)
+       SELECT $1::uuid, $2::uuid, t.p, t.i, t.c, t.h, t.e::vector
+       FROM unnest($3::int[], $4::int[], $5::text[], $6::text[], $7::text[]) AS t(p, i, c, h, e)`,
+      [d.rows[0].id, orgId, pageNums, indexes, contents, hashes, embeds]
     );
     return d.rows[0];
   });

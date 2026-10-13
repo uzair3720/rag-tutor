@@ -33,7 +33,7 @@ CREATE TABLE chunks (
   chunk_index INT NOT NULL,
   content TEXT NOT NULL,
   content_hash TEXT NOT NULL,
-  embedding vector(1536),
+  embedding vector(384),
   FOREIGN KEY (document_id, org_id) REFERENCES documents(id, org_id) ON DELETE CASCADE,
   UNIQUE (document_id, chunk_index)
 );
