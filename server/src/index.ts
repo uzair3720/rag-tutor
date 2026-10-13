@@ -8,6 +8,7 @@ import authRouter from "./auth";
 import documentsRouter from "./documents";
 import searchRouter from "./search";
 import askRouter from "./ask";
+import quizRouter from "./quiz";
 import { requireAuth } from "./middleware";
 
 const app = express();
@@ -26,6 +27,7 @@ app.use("/auth", authRouter);
 app.use("/documents", documentsRouter);
 app.use("/search", searchRouter);
 app.use("/ask", askRouter);
+app.use("/quiz", quizRouter);
 
 app.get("/me", requireAuth, (req, res) => {
   res.json(req.auth);

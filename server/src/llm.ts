@@ -20,7 +20,7 @@ async function request(model: string, system: string, user: string) {
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: system }] },
       contents: [{ role: "user", parts: [{ text: user }] }],
-      generationConfig: { temperature: 0.2, maxOutputTokens: 2048 },
+      generationConfig: { temperature: 0.2, maxOutputTokens: 4096 },
     }),
     signal: AbortSignal.timeout(60000),
   });
